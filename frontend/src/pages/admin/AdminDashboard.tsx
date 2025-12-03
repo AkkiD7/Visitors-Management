@@ -15,10 +15,13 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { useNavigate } from "react-router-dom";
+import RoleCreation from "./RoleCreation";
+import VisitorDetails from "./VisitorDetails";
+import VisitorForm from "./VisitorForm";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState<"overview" | "roles" | "visitors">("overview");
+  const [activeSection, setActiveSection] = useState<"overview" | "roles" | "visitor-form" |"visitor-details">("overview");
 
   const handleLogout = () => {
     localStorage.removeItem("userRole");
@@ -56,13 +59,24 @@ const Dashboard = () => {
 
                   <SidebarMenuItem>
                     <SidebarMenuButton
-                      isActive={activeSection === "visitors"}
-                      onClick={() => setActiveSection("visitors")}
+                      isActive={activeSection === "visitor-form"}
+                      onClick={() => setActiveSection("visitor-form")}
+                    >
+                      <Users className="h-4 w-4" />
+                      <span>Visitor Form</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      isActive={activeSection === "visitor-details"}
+                      onClick={() => setActiveSection("visitor-details")}
                     >
                       <Users className="h-4 w-4" />
                       <span>Visitor Details</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -104,7 +118,7 @@ const Dashboard = () => {
                   <CardContent>
                     <Button
                       className="w-full"
-                      onClick={() => navigate("/admin/role-creation")}
+                      onClick={() => setActiveSection("roles")}
                     >
                       Manage Roles
                     </Button>
@@ -124,7 +138,7 @@ const Dashboard = () => {
                   <CardContent>
                     <Button
                       className="w-full"
-                      onClick={() => navigate("/admin/visitor-form")}
+                      onClick={() => setActiveSection("visitor-form")}
                     >
                       Create Form
                     </Button>
@@ -144,7 +158,7 @@ const Dashboard = () => {
                   <CardContent>
                     <Button
                       className="w-full"
-                      onClick={() => navigate("/admin/visitor-details")}
+                      onClick={() => setActiveSection("visitor-details")}
                     >
                       View Details
                     </Button>
@@ -154,32 +168,14 @@ const Dashboard = () => {
             )}
 
             {activeSection === "roles" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Role Management</CardTitle>
-                  <CardDescription>Create and manage user roles in the system</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button onClick={() => navigate("/admin/role-creation")}>
-                    Go to Role Creation
-                  </Button>
-                </CardContent>
-              </Card>
+              <RoleCreation />
             )}
 
-            {activeSection === "visitors" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Visitor Records</CardTitle>
-                  <CardDescription>View and manage all visitor entries</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button onClick={() => navigate("/admin/visitor-details")}>
-                    View All Visitors
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
+            {activeSection === "visitor-form" && (
+              <VisitorForm />)}
+
+              {activeSection === "visitor-details" && (
+              <VisitorDetails />)}
           </main>
         </div>
       </div>
