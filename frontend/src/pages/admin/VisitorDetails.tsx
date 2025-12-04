@@ -15,7 +15,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download } from "lucide-react";
 import { toast } from "sonner";
 import { getVisitorsApi } from "@/api/visitor";
 import type { VisitorResponse } from "@/api/visitor";
