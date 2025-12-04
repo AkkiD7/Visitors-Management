@@ -75,12 +75,12 @@ const visitorSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 
-visitorSchema.pre("save", function (next) {
+visitorSchema.pre("save", function () {
   if (this.inTime && this.outTime) {
     const diff = (this.outTime - this.inTime) / (1000 * 60); 
     this.totalTimeSpent = Math.round(diff);
   }
-  next();
 });
+
 
 export default mongoose.model("Visitor", visitorSchema);

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,15 +20,36 @@ import {
 import { toast } from "sonner";
 import { createUserApi, getUsersApi, type IUser } from "@/api/user";
 
-const RoleCreation = () => {
+const userCredentialsSchema = z.object({
+  username: z
+    .string()
+    .min(3, "Username must be at least 3 characters")
+    .regex(/^[a-zA-Z0-9_]+$/, "Only letters, numbers & underscore allowed"),
 
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[a-z]/, "Password must include at least one lowercase letter")
+    .regex(/[A-Z]/, "Password must include at least one uppercase letter")
+    .regex(/\d/, "Password must include at least one number")
+    .regex(/[^A-Za-z0-9]/, "Password must include at least one symbol"),
+});
+
+
+type UserCredentials = z.infer<typeof userCredentialsSchema>;
+
+const RoleCreation = () => {
   const [role, setRole] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const [users, setUsers] = useState<IUser[]>([]);
   const [isUsersLoading, setIsUsersLoading] = useState(false);
+
+  const [errors, setErrors] = useState<{
+    username?: string;
+    password?: string;
+  }>({});
 
   const fetchUsers = async () => {
     try {
@@ -52,21 +74,49 @@ const RoleCreation = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!role || !username || !password) {
-      toast.error("Please fill all fields");
+    if (!role) {
+      toast.error("Please select a role");
+      return;
+    }
+
+    const credentials: UserCredentials = {
+      username: username.trim(),
+      password,
+    };
+
+    const result = userCredentialsSchema.safeParse(credentials);
+
+    if (!result.success) {
+      const fieldErrors = result.error.flatten().fieldErrors;
+
+      const newErrors: typeof errors = {
+        username: fieldErrors.username?.[0],
+        password: fieldErrors.password?.[0],
+      };
+
+      setErrors(newErrors);
+
+      const firstError = newErrors.username || newErrors.password;
+      if (firstError) toast.error(firstError);
+
       return;
     }
 
     try {
       setIsSubmitting(true);
 
-      const data = await createUserApi({ username, password, role });
+      const data = await createUserApi({
+        username: result.data.username,
+        password: result.data.password,
+        role,
+      });
 
       toast.success(data.message || "Role created!");
 
       setRole("");
       setPassword("");
       setUsername("");
+      setErrors({});
 
       fetchUsers();
     } catch (error: any) {
@@ -110,20 +160,44 @@ const RoleCreation = () => {
                     type="text"
                     placeholder="Enter username"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    onChange={(e) => {
+                      setUsername(e.target.value);
+                      setErrors((prev) => ({ ...prev, username: undefined }));
+                    }}
                   />
+                  {errors.username && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.username}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Enter password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
+  <Label htmlFor="password">Password</Label>
+  <Input
+    id="password"
+    type="password"
+    placeholder="Enter password"
+    value={password}
+    onChange={(e) => {
+      setPassword(e.target.value);
+      setErrors((prev) => ({ ...prev, password: undefined }));
+    }}
+  />
+
+  <p className="text-xs text-muted-foreground mt-1">
+    Password must be at least <b>8 characters</b> and include{" "}
+    <b>uppercase</b>, <b>lowercase</b>, <b>number</b> and <b>symbol</b>.
+  </p>
+
+  {errors.password && (
+    <p className="text-xs text-red-500 mt-1">
+      {errors.password}
+    </p>
+  )}
+</div>
+
+
 
                 <Button
                   type="submit"

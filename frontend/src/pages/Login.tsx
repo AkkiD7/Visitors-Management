@@ -99,7 +99,7 @@ const handleLogin = async (e: React.FormEvent) => {
           </form>
           <div className="mt-6 p-4 bg-muted/50 rounded-lg">
             <p className="text-sm text-muted-foreground text-center mb-2">Demo Credentials:</p>
-            <p className="text-xs text-muted-foreground">Admin: admin / admin123</p>
+            <p className="text-xs text-muted-foreground">Admin: admin / Admin@123</p>
           </div>
         </CardContent>
       </Card>

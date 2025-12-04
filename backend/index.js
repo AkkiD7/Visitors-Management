@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 6000;
 async function createDefaultAdmin() {
     const adminExists = await User.findOne({ role: 'admin' });
     if (!adminExists) {
-        const passwordHash = await bcrypt.hash("admin123", 10);
+        const passwordHash = await bcrypt.hash("Admin@123", 10);
 
         await User.create({
             username: 'admin',

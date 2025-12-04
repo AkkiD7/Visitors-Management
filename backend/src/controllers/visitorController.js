@@ -1,41 +1,178 @@
 import Visitor from "../models/Visitor.js";
 
 export const createVisitor = async (req, res) => {
-  const visitor = await Visitor.create({
-    ...req.body,
-    createdBy: req.user._id
-  });
+  try {
+    const {
+      visitorNumber,
+      name,
+      mobile,
+      contactPersonId,
+      purpose,
+      numberOfPersons,
+      vehicleNumber,
+      inTime,
+      outTime,
+      totalTimeSpent,
+      photoUrl,
+      meetingStatus,
+    } = req.body;
 
-  res.status(201).json(visitor);
+    if (!visitorNumber || !name || !mobile || !contactPersonId || !purpose) {
+      return res.status(400).json({
+        success: false,
+        message: "visitorNumber, name, mobile, contactPersonId and purpose are required",
+        data: null,
+      });
+    }
+
+    const existing = await Visitor.findOne({ visitorNumber });
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: "Visitor number already exists",
+        data: null,
+      });
+    }
+
+    const visitor = await Visitor.create({
+      visitorNumber,
+      name,
+      mobile,
+      contactPersonId,
+      purpose,
+      numberOfPersons,
+      vehicleNumber,
+      inTime: inTime || null,
+      outTime: outTime || null,
+      totalTimeSpent: totalTimeSpent ?? null,
+      photoUrl: photoUrl || null,
+      meetingStatus: meetingStatus || undefined, 
+      createdBy: req.user._id,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Visitor created successfully",
+      data: visitor,
+    });
+  } catch (error) {
+    console.error("Create Visitor Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      data: null,
+    });
+  }
 };
 
 export const updateVisitorIn = async (req, res) => {
-  const visitor = await Visitor.findByIdAndUpdate(
-    req.params.id,
-    { ...req.body },
-    { new: true }
-  );
-  res.json(visitor);
+  try {
+    const { id } = req.params;
+
+    const visitor = await Visitor.findByIdAndUpdate(
+      id,
+      { ...req.body }, 
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    if (!visitor) {
+      return res.status(404).json({
+        success: false,
+        message: "Visitor not found",
+        data: null,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Visitor IN details updated successfully",
+      data: visitor,
+    });
+  } catch (error) {
+    console.error("Update Visitor IN Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      data: null,
+    });
+  }
 };
 
 export const updateVisitorOut = async (req, res) => {
-  const visitor = await Visitor.findById(req.params.id);
+  try {
+    const { id } = req.params;
 
-  visitor.outTime = new Date();
-  await visitor.save();
+    const visitor = await Visitor.findById(id);
+    if (!visitor) {
+      return res.status(404).json({
+        success: false,
+        message: "Visitor not found",
+        data: null,
+      });
+    }
 
-  res.json(visitor);
+    visitor.outTime = new Date(); 
+    await visitor.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Visitor OUT details updated successfully",
+      data: visitor,
+    });
+  } catch (error) {
+    console.error("Update Visitor OUT Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      data: null,
+    });
+  }
 };
 
 export const getAllVisitors = async (req, res) => {
-  const visitors = await Visitor.find().populate("contactPersonId", "name role");
-  res.json(visitors);
+  try {
+    const visitors = await Visitor.find()
+      .populate("contactPersonId", "username role")
+      .populate("createdBy", "username role")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      message: "Visitors fetched successfully",
+      data: visitors,
+    });
+  } catch (error) {
+    console.error("Get All Visitors Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      data: null,
+    });
+  }
 };
 
 export const getMyVisitors = async (req, res) => {
-  const visitors = await Visitor.find({
-    contactPersonId: req.user._id
-  }).sort({ createdAt: -1 });
+  try {
+    const visitors = await Visitor.find({
+      contactPersonId: req.user._id,
+    })
+      .populate("contactPersonId", "username role")
+      .sort({ createdAt: -1 });
 
-  res.json(visitors);
+    return res.status(200).json({
+      success: true,
+      message: "My visitors fetched successfully",
+      data: visitors,
+    });
+  } catch (error) {
+    console.error("Get My Visitors Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      data: null,
+    });
+  }
 };

@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Toaster } from "sonner";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -14,6 +15,12 @@ import ProtectedRoute from "./components/routing/ProtectedRoute";
 
 const App = () => (
   <BrowserRouter>
+    <Toaster
+      richColors
+      position="top-right"
+      closeButton
+    />
+
     <Routes>
       <Route path="/" element={<Login />} />
 

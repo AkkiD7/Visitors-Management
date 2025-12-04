@@ -13,7 +13,7 @@ const router = express.Router();
 router.post("/", protect, allowRoles("admin", "security"), createVisitor);
 router.patch("/:id/in", protect, allowRoles("security"), updateVisitorIn);
 router.patch("/:id/out", protect, allowRoles("security"), updateVisitorOut);
-router.get("/", protect, allowRoles("admin"), getAllVisitors);
+router.get("/", protect, allowRoles("admin", "security"), getAllVisitors);
 router.get("/my", protect, allowRoles("manager", "hr"), getMyVisitors);
 
 export default router;
