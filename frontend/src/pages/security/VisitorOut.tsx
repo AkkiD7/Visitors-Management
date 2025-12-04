@@ -29,6 +29,7 @@ import {
   updateVisitorOutApi,
 } from "@/api/visitor";
 import type { VisitorResponse } from "@/api/visitor";
+import { clearAuthUser } from "@/utils/auth";
 
 type VisitorFormConfig = {
   visitorNumber: boolean;
@@ -131,9 +132,9 @@ const VisitorOut = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("userRole");
-    navigate("/");
+const handleLogout = () => {
+    clearAuthUser(); 
+    navigate("/", { replace: true }); 
   };
 
   return (

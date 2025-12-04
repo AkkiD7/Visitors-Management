@@ -57,7 +57,6 @@ const defaultConfig: VisitorFormConfig = {
   totalTimeSpent: true,
 };
 
-// 🔹 Zod schema – basic format validation
 const visitorSchema = z.object({
   visitorNumber: z.string().optional(),
   visitorName: z.string().optional(),
@@ -68,7 +67,6 @@ const visitorSchema = z.object({
       (val) => !val || /^\d{10}$/.test(val),
       { message: "Mobile number must be 10 digits" }
     ),
-  // contactPerson yaha optional hai, actual required check niche hoga
   contactPerson: z.string().optional(),
   purpose: z.string().optional(),
   numberOfPersons: z
@@ -86,7 +84,7 @@ type VisitorFormData = {
   visitorNumber: string;
   visitorName: string;
   mobileNumber: string;
-  contactPerson: string; // yaha hum _id store karenge
+  contactPerson: string;
   purpose: string;
   numberOfPersons: string;
   vehicleNumber: string;
@@ -137,7 +135,6 @@ const VisitorIn = () => {
     { label: "Reports", path: "/security/report", icon: FileText },
   ];
 
-  // 🔹 Load admin config from localStorage
   useEffect(() => {
     try {
       const stored = localStorage.getItem("visitorFormConfig");
@@ -150,12 +147,11 @@ const VisitorIn = () => {
     }
   }, []);
 
-  // 🔹 Fetch contact persons (Manager / HR)
   useEffect(() => {
     const fetchContacts = async () => {
       try {
         setIsContactsLoading(true);
-        const res = await getUsersApi(); // { success, message, data }
+        const res = await getUsersApi(); 
         if (res?.success && Array.isArray(res.data)) {
           const filtered = res.data.filter(
             (u: IUser) => u.role === "manager" || u.role === "hr"
@@ -196,8 +192,7 @@ const VisitorIn = () => {
     const now = new Date();
     const iso = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
       .toISOString()
-      .slice(0, 16); // yyyy-MM-ddTHH:mm
-
+      .slice(0, 16); 
     setFormData((prev) => ({ ...prev, inTime: iso }));
   };
 
@@ -205,7 +200,6 @@ const VisitorIn = () => {
     e.preventDefault();
     setErrors({});
 
-    // 1️⃣ Zod format validation
     const zodResult = visitorSchema.safeParse(formData);
 
     let fieldErrors: FieldErrors = {};
@@ -222,7 +216,6 @@ const VisitorIn = () => {
       };
     }
 
-    // 2️⃣ Required checks based on admin config
     if (config.visitorNumber && !formData.visitorNumber.trim()) {
       fieldErrors.visitorNumber =
         fieldErrors.visitorNumber || "Visitor Number is required";
@@ -239,7 +232,6 @@ const VisitorIn = () => {
     }
 
     if (config.contactPerson && !formData.contactPerson.trim()) {
-      // yaha contactPerson me hum _id store kar rahe hai (dropdown value)
       fieldErrors.contactPerson =
         fieldErrors.contactPerson || "Contact Person is required";
     }
@@ -249,7 +241,6 @@ const VisitorIn = () => {
         fieldErrors.purpose || "Purpose is required";
     }
 
-    // 3️⃣ Agar koi bhi error hai → sab field ke niche dikhayenge, toast generic
     const hasAnyError = Object.values(fieldErrors).some(Boolean);
 
     if (hasAnyError) {
@@ -258,12 +249,11 @@ const VisitorIn = () => {
       return;
     }
 
-    // 4️⃣ Prepare payload (backend ko id chahiye)
     const payload: CreateVisitorPayload = {
       visitorNumber: formData.visitorNumber.trim(),
       name: formData.visitorName.trim(),
       mobile: formData.mobileNumber.trim(),
-      contactPersonId: formData.contactPerson.trim(), // 👈 _id jaa raha hai
+      contactPersonId: formData.contactPerson.trim(), 
       purpose: formData.purpose.trim(),
       numberOfPersons: formData.numberOfPersons
         ? Number(formData.numberOfPersons)
@@ -318,7 +308,6 @@ const VisitorIn = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen w-full bg-background flex">
-        {/* Left sidebar navigation */}
         <Sidebar collapsible="icon" variant="sidebar" className="border-r">
           <SidebarContent>
             <SidebarGroup>
@@ -342,7 +331,6 @@ const VisitorIn = () => {
           </SidebarContent>
         </Sidebar>
 
-        {/* Main content area */}
         <div className="flex-1 flex flex-col">
           <header className="border-b bg-card">
             <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -375,7 +363,6 @@ const VisitorIn = () => {
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid gap-6 md:grid-cols-2">
-                    {/* Visitor Number */}
                     {config.visitorNumber && (
                       <div className="space-y-2">
                         <Label htmlFor="visitorNumber">Visitor Number</Label>
@@ -395,7 +382,6 @@ const VisitorIn = () => {
                       </div>
                     )}
 
-                    {/* Visitor Name */}
                     {config.name && (
                       <div className="space-y-2">
                         <Label htmlFor="visitorName">Visitor Name</Label>
@@ -414,7 +400,6 @@ const VisitorIn = () => {
                       </div>
                     )}
 
-                    {/* Mobile */}
                     {config.mobile && (
                       <div className="space-y-2">
                         <Label htmlFor="mobileNumber">Mobile Number</Label>
@@ -433,7 +418,6 @@ const VisitorIn = () => {
                       </div>
                     )}
 
-                    {/* Contact Person (Dropdown with Manager / HR) */}
                     {config.contactPerson && (
                       <div className="space-y-2">
                         <Label htmlFor="contactPerson">
@@ -476,7 +460,6 @@ const VisitorIn = () => {
                       </div>
                     )}
 
-                    {/* Purpose */}
                     {config.purpose && (
                       <div className="space-y-2">
                         <Label htmlFor="purpose">Purpose</Label>
@@ -531,7 +514,6 @@ const VisitorIn = () => {
                       </div>
                     )}
 
-                    {/* In Time */}
                     {config.inTime && (
                       <div className="space-y-2 md:col-span-2">
                         <Label htmlFor="inTime">
@@ -561,7 +543,6 @@ const VisitorIn = () => {
                       </div>
                     )}
 
-                    {/* Total Time Spent – info only */}
                     {config.totalTimeSpent && (
                       <div className="space-y-2 md:col-span-2">
                         <Label htmlFor="totalTimeSpent">
@@ -579,7 +560,6 @@ const VisitorIn = () => {
                       </div>
                     )}
 
-                    {/* Photo */}
                     <div className="space-y-2 md:col-span-2">
                       <Label htmlFor="photo">Visitor Photo</Label>
                       <div className="flex gap-2">

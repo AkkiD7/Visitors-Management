@@ -50,22 +50,20 @@ const Report = () => {
 
   const handleDownload = () => {
     console.log("Downloading report...");
-    // TODO: yahan baad mein CSV/Excel export add kar sakte ho
   };
 
-  const handleLogout = () => {
-    clearAuthUser(); // ✅ proper logout
-    navigate("/", { replace: true });
+ const handleLogout = () => {
+    clearAuthUser(); 
+    navigate("/", { replace: true }); 
   };
 
-  // ✅ API call to fetch visitors
   useEffect(() => {
     const fetchVisitors = async () => {
       try {
         setIsLoading(true);
 
-        const res = await getVisitorsApi(); // ApiResponse<VisitorResponse[]>
-        setVisitors(res.data);              // ✅ sirf array set ho raha hai
+        const res = await getVisitorsApi(); 
+        setVisitors(res.data);              
 
       } catch (error) {
         console.error("Failed to fetch visitors:", error);

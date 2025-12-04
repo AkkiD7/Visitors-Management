@@ -63,7 +63,7 @@ const VisitorForm = () => {
     const fetchMyVisitors = async () => {
       try {
         setIsLoadingVisitors(true);
-        const res = await getMyVisitorsApi(); // ApiResponse<VisitorResponse[]>
+        const res = await getMyVisitorsApi(); 
         setVisitors(res.data || []);
       } catch (error) {
         console.error("Failed to fetch my visitors:", error);
