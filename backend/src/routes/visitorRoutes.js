@@ -4,7 +4,8 @@ import {
     updateVisitorIn,
     updateVisitorOut,
     getAllVisitors,
-    getMyVisitors
+    getMyVisitors,
+    updateVisitorMeeting
 } from "../controllers/visitorController.js";
 import { protect, allowRoles } from "../middleware/authMiddleware.js";
 
@@ -15,5 +16,11 @@ router.patch("/:id/in", protect, allowRoles("security"), updateVisitorIn);
 router.patch("/:id/out", protect, allowRoles("security"), updateVisitorOut);
 router.get("/", protect, allowRoles("admin", "security"), getAllVisitors);
 router.get("/my", protect, allowRoles("manager", "hr"), getMyVisitors);
+router.patch(
+  "/:id/meeting",
+  protect,
+  allowRoles("manager", "hr"),
+  updateVisitorMeeting
+);
 
 export default router;

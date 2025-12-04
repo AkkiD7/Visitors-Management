@@ -1,6 +1,20 @@
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Shield, LogOut, FileText } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -16,21 +30,17 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
+import { getVisitorsApi } from "../../api/visitor";
+import type { VisitorResponse } from "../../api/visitor";
+import { clearAuthUser } from "@/utils/auth";
+
 const Report = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname;
 
-  const visitors = [
-    {
-      id: 1,
-      visitorNumber: "VN101",
-      name: "John Doe",
-      inTime: "2024-12-02 10:00 AM",
-      outTime: "2024-12-02 12:30 PM",
-      totalTime: "2h 30m",
-    },
-  ];
+  const [visitors, setVisitors] = useState<VisitorResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const navItems = [
     { label: "Visitor In", path: "/security/visitor-in", icon: Shield },
@@ -39,13 +49,59 @@ const Report = () => {
   ];
 
   const handleDownload = () => {
-    // Download logic will be implemented
     console.log("Downloading report...");
+    // TODO: yahan baad mein CSV/Excel export add kar sakte ho
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("userRole");
-    navigate("/");
+    clearAuthUser(); // ✅ proper logout
+    navigate("/", { replace: true });
+  };
+
+  // ✅ API call to fetch visitors
+  useEffect(() => {
+    const fetchVisitors = async () => {
+      try {
+        setIsLoading(true);
+
+        const res = await getVisitorsApi(); // ApiResponse<VisitorResponse[]>
+        setVisitors(res.data);              // ✅ sirf array set ho raha hai
+
+      } catch (error) {
+        console.error("Failed to fetch visitors:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchVisitors();
+  }, []);
+
+  // ✅ null + undefined safe type
+  const formatDateTime = (value: string | null | undefined): string => {
+    if (!value) return "-";
+    return new Date(value).toLocaleString();
+  };
+
+  // ✅ null + undefined safe type
+  const getTotalTime = (
+    inTime: string | null | undefined,
+    outTime: string | null | undefined
+  ): string => {
+    if (!inTime || !outTime) return "-";
+
+    const start = new Date(inTime).getTime();
+    const end = new Date(outTime).getTime();
+
+    if (isNaN(start) || isNaN(end) || end < start) return "-";
+
+    const diffMs = end - start;
+    const diffMins = Math.floor(diffMs / 1000 / 60);
+    const hours = Math.floor(diffMins / 60);
+    const mins = diffMins % 60;
+
+    if (hours === 0) return `${mins}m`;
+    return `${hours}h ${mins}m`;
   };
 
   return (
@@ -86,7 +142,9 @@ const Report = () => {
                 </div>
                 <div>
                   <h1 className="text-xl font-bold">Visitor Reports</h1>
-                  <p className="text-sm text-muted-foreground">Download visitor data</p>
+                  <p className="text-sm text-muted-foreground">
+                    Download visitor data
+                  </p>
                 </div>
               </div>
               <Button variant="outline" onClick={handleLogout}>
@@ -99,7 +157,9 @@ const Report = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Visitor Report</CardTitle>
-                <CardDescription>View and download visitor records</CardDescription>
+                <CardDescription>
+                  View and download visitor records
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between mb-4">
@@ -111,6 +171,7 @@ const Report = () => {
                     Download Report
                   </Button>
                 </div>
+
                 <div className="rounded-md border">
                   <Table>
                     <TableHeader>
@@ -123,15 +184,37 @@ const Report = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {visitors.map((visitor) => (
-                        <TableRow key={visitor.id}>
-                          <TableCell className="font-medium">{visitor.visitorNumber}</TableCell>
-                          <TableCell>{visitor.name}</TableCell>
-                          <TableCell>{visitor.inTime}</TableCell>
-                          <TableCell>{visitor.outTime}</TableCell>
-                          <TableCell>{visitor.totalTime}</TableCell>
+                      {isLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-6">
+                            Loading visitors...
+                          </TableCell>
                         </TableRow>
-                      ))}
+                      ) : visitors.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-6">
+                            No visitors found.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        visitors.map((visitor) => (
+                          <TableRow key={visitor._id}>
+                            <TableCell className="font-medium">
+                              {visitor.visitorNumber}
+                            </TableCell>
+                            <TableCell>{visitor.name}</TableCell>
+                            <TableCell>
+                              {formatDateTime(visitor.inTime)}
+                            </TableCell>
+                            <TableCell>
+                              {formatDateTime(visitor.outTime)}
+                            </TableCell>
+                            <TableCell>
+                              {getTotalTime(visitor.inTime, visitor.outTime)}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </div>

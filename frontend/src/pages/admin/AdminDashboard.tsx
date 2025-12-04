@@ -18,14 +18,16 @@ import { useNavigate } from "react-router-dom";
 import RoleCreation from "./RoleCreation";
 import VisitorDetails from "./VisitorDetails";
 import VisitorForm from "./VisitorForm";
+import { clearAuthUser } from "@/utils/auth";
+
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<"overview" | "roles" | "visitor-form" |"visitor-details">("overview");
 
   const handleLogout = () => {
-    localStorage.removeItem("userRole");
-    navigate("/");
+    clearAuthUser(); 
+    navigate("/", { replace: true }); 
   };
 
   return (

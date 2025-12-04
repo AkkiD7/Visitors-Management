@@ -1,6 +1,20 @@
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Shield, Users } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -16,22 +30,17 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
+import { getMyVisitorsApi } from "@/api/visitor";
+import type { VisitorResponse } from "@/api/visitor";
+import { clearAuthUser } from "@/utils/auth";
+
 const VisitorList = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname;
 
-  const visitors = [
-    {
-      id: 1,
-      visitorNumber: "VN101",
-      name: "John Doe",
-      contactPerson: "Manager Smith",
-      purpose: "Business Meeting",
-      visitDate: "2024-12-02",
-      meetingStatus: "Completed",
-    },
-  ];
+  const [visitors, setVisitors] = useState<VisitorResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const navItems = [
     { label: "Visitor Form", path: "/manager/visitor-form", icon: Shield },
@@ -39,8 +48,34 @@ const VisitorList = () => {
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem("userRole");
-    navigate("/");
+    clearAuthUser();
+    navigate("/", { replace: true });
+  };
+
+  useEffect(() => {
+    const fetchMyVisitors = async () => {
+      try {
+        setIsLoading(true);
+        const res = await getMyVisitorsApi(); // ApiResponse<VisitorResponse[]>
+        setVisitors(res.data || []);
+      } catch (error) {
+        console.error("Failed to fetch my visitors:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMyVisitors();
+  }, []);
+
+  const formatDate = (value: string | null | undefined) => {
+    if (!value) return "-";
+    return new Date(value).toLocaleDateString();
+  };
+
+  const getMeetingStatus = (v: VisitorResponse) => {
+    if (v.outTime) return "Completed";
+    return "In Progress";
   };
 
   return (
@@ -81,7 +116,9 @@ const VisitorList = () => {
                 </div>
                 <div>
                   <h1 className="text-xl font-bold">Past Visitors</h1>
-                  <p className="text-sm text-muted-foreground">View visitor history</p>
+                  <p className="text-sm text-muted-foreground">
+                    View visitor history
+                  </p>
                 </div>
               </div>
               <Button variant="outline" onClick={handleLogout}>
@@ -110,20 +147,40 @@ const VisitorList = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {visitors.map((visitor) => (
-                        <TableRow key={visitor.id}>
-                          <TableCell className="font-medium">{visitor.visitorNumber}</TableCell>
-                          <TableCell>{visitor.name}</TableCell>
-                          <TableCell>{visitor.contactPerson}</TableCell>
-                          <TableCell>{visitor.purpose}</TableCell>
-                          <TableCell>{visitor.visitDate}</TableCell>
-                          <TableCell>
-                            <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
-                              {visitor.meetingStatus}
-                            </span>
+                      {isLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-6">
+                            Loading visitors...
                           </TableCell>
                         </TableRow>
-                      ))}
+                      ) : visitors.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-6">
+                            No visitors found.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        visitors.map((visitor) => (
+                          <TableRow key={visitor._id}>
+                            <TableCell className="font-medium">
+                              {visitor.visitorNumber}
+                            </TableCell>
+                            <TableCell>{visitor.name}</TableCell>
+                            <TableCell>
+                              {visitor.contactPersonId?.username}
+                            </TableCell>
+                            <TableCell>{visitor.purpose}</TableCell>
+                            <TableCell>
+                              {formatDate(visitor.createdAt)}
+                            </TableCell>
+                            <TableCell>
+                              <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                                {getMeetingStatus(visitor)}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </div>

@@ -62,3 +62,26 @@ export const updateVisitorOutApi = async (id: string) => {
   );
   return res.data;
 };
+
+export const getMyVisitorsApi = async () => {
+  const res = await axiosInstance.get<ApiResponse<VisitorResponse[]>>(
+    "/visitors/my"
+  );
+  return res.data; 
+};
+
+export interface UpdateVisitorMeetingPayload {
+  meetingStatus: "Pending" | "Completed" | "Cancelled" | "No Show";
+  outTime: string;
+}
+
+export const updateVisitorMeeting = async (
+  id: string,
+  payload: UpdateVisitorMeetingPayload
+) => {
+  const res = await axiosInstance.patch<ApiResponse<VisitorResponse>>(
+    `/visitors/${id}/meeting`,
+    payload
+  );
+  return res.data;
+};

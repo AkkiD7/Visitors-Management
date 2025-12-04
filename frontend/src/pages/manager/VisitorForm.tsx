@@ -1,9 +1,21 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Shield, Users } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -20,35 +32,86 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
+import { getMyVisitorsApi, updateVisitorMeeting } from "@/api/visitor";
+import type { VisitorResponse } from "@/api/visitor";
+import { clearAuthUser } from "@/utils/auth";
+
 const VisitorForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname;
 
-  const [visitorName, setVisitorName] = useState("");
-  const [meetingStatus, setMeetingStatus] = useState("");
+  const [visitorId, setVisitorId] = useState<string>("");
+  const [meetingStatus, setMeetingStatus] = useState<
+    "Pending" | "Completed" | "Cancelled" | "No Show" | ""
+  >("");
   const [timeOut, setTimeOut] = useState("");
+  const [visitors, setVisitors] = useState<VisitorResponse[]>([]);
+  const [isLoadingVisitors, setIsLoadingVisitors] = useState(false);
 
   const navItems = [
     { label: "Visitor Form", path: "/manager/visitor-form", icon: Shield },
     { label: "Visitor List", path: "/manager/visitor-list", icon: Users },
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (visitorName && meetingStatus && timeOut) {
-      toast.success("Meeting details updated!");
-      setVisitorName("");
-      setMeetingStatus("");
-      setTimeOut("");
-    } else {
-      toast.error("Please fill all fields");
-    }
+  const handleLogout = () => {
+    clearAuthUser();
+    navigate("/", { replace: true });
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("userRole");
-    navigate("/");
+  useEffect(() => {
+    const fetchMyVisitors = async () => {
+      try {
+        setIsLoadingVisitors(true);
+        const res = await getMyVisitorsApi(); // ApiResponse<VisitorResponse[]>
+        setVisitors(res.data || []);
+      } catch (error) {
+        console.error("Failed to fetch my visitors:", error);
+        toast.error("Failed to load visitors");
+      } finally {
+        setIsLoadingVisitors(false);
+      }
+    };
+
+    fetchMyVisitors();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!visitorId || !meetingStatus || !timeOut) {
+      toast.error("Please fill all fields");
+      return;
+    }
+
+    try {
+      const payload = {
+        meetingStatus: meetingStatus as
+          | "Pending"
+          | "Completed"
+          | "Cancelled"
+          | "No Show",
+        outTime: timeOut,
+      };
+
+      const res = await updateVisitorMeeting(visitorId, payload);
+
+      toast.success(res.message || "Meeting details updated");
+
+      if (res.data) {
+        setVisitors((prev) =>
+          prev.map((v) => (v._id === visitorId ? res.data : v))
+        );
+      }
+
+      setVisitorId("");
+      setMeetingStatus("");
+      setTimeOut("");
+    } catch (error: any) {
+      console.error("Update meeting error:", error);
+      const msg = error?.response?.data?.message || "Update failed";
+      toast.error(msg);
+    }
   };
 
   return (
@@ -88,8 +151,12 @@ const VisitorForm = () => {
                   <Shield className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold">Manager/HR - Visitor Form</h1>
-                  <p className="text-sm text-muted-foreground">Update meeting details</p>
+                  <h1 className="text-xl font-bold">
+                    Manager/HR - Visitor Form
+                  </h1>
+                  <p className="text-sm text-muted-foreground">
+                    Update meeting details
+                  </p>
                 </div>
               </div>
               <Button variant="outline" onClick={handleLogout}>
@@ -102,34 +169,56 @@ const VisitorForm = () => {
             <Card className="max-w-2xl mx-auto">
               <CardHeader>
                 <CardTitle>Update Visitor Meeting Details</CardTitle>
-                <CardDescription>Record meeting status and exit time</CardDescription>
+                <CardDescription>
+                  Record meeting status and exit time
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="visitorName">Visitor Name</Label>
-                    <Select value={visitorName} onValueChange={setVisitorName}>
+                    <Label htmlFor="visitorName">Visitor</Label>
+                    <Select
+                      value={visitorId}
+                      onValueChange={setVisitorId}
+                      disabled={isLoadingVisitors || visitors.length === 0}
+                    >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select visitor name" />
+                        <SelectValue
+                          placeholder={
+                            isLoadingVisitors
+                              ? "Loading visitors..."
+                              : visitors.length === 0
+                              ? "No visitors found"
+                              : "Select visitor"
+                          }
+                        />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="john-doe">John Doe (VN101)</SelectItem>
-                        <SelectItem value="jane-smith">Jane Smith (VN102)</SelectItem>
+                        {visitors.map((v) => (
+                          <SelectItem key={v._id} value={v._id}>
+                            {v.name} ({v.visitorNumber})
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="meetingStatus">Meeting Status</Label>
-                    <Select value={meetingStatus} onValueChange={setMeetingStatus}>
+                    <Select
+                      value={meetingStatus}
+                      onValueChange={(
+                        value: "Pending" | "Completed" | "Cancelled" | "No Show"
+                      ) => setMeetingStatus(value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="in-progress">In Progress</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                        <SelectItem value="rescheduled">Rescheduled</SelectItem>
+                        <SelectItem value="Pending">Pending</SelectItem>
+                        <SelectItem value="Completed">Completed</SelectItem>
+                        <SelectItem value="Cancelled">Cancelled</SelectItem>
+                        <SelectItem value="No Show">No Show</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -144,7 +233,11 @@ const VisitorForm = () => {
                     />
                   </div>
 
-                  <Button type="submit" className="w-full">
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={isLoadingVisitors || visitors.length === 0}
+                  >
                     Update Meeting Details
                   </Button>
                 </form>

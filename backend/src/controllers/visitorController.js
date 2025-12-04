@@ -176,3 +176,64 @@ export const getMyVisitors = async (req, res) => {
     });
   }
 };
+
+export const updateVisitorMeeting = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { meetingStatus, outTime } = req.body;
+
+    if (!meetingStatus || !outTime) {
+      return res.status(400).json({
+        success: false,
+        message: "meetingStatus and outTime are required",
+        data: null,
+      });
+    }
+
+    const allowedStatuses = ["Pending", "Completed", "Cancelled", "No Show"];
+    if (!allowedStatuses.includes(meetingStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid meeting status",
+        data: null,
+      });
+    }
+
+    const visitor = await Visitor.findOne({
+      _id: id,
+      contactPersonId: req.user._id, 
+    });
+
+    if (!visitor) {
+      return res.status(404).json({
+        success: false,
+        message: "Visitor not found or not assigned to you",
+        data: null,
+      });
+    }
+
+    visitor.meetingStatus = meetingStatus;
+    visitor.outTime = new Date(outTime);
+
+    if (visitor.inTime) {
+      visitor.totalTimeSpent = Math.round(
+        (visitor.outTime - visitor.inTime) / (1000 * 60)
+      );
+    }
+
+    await visitor.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Visitor meeting details updated successfully",
+      data: visitor,
+    });
+  } catch (error) {
+    console.error("Update Visitor Meeting Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      data: null,
+    });
+  }
+};
